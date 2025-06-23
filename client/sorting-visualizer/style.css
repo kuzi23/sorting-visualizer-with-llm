@@ -1,0 +1,15 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+#bars {
+  width: 55%;
+  margin-right: 2%;
+}
+
+.bar {
+  width: 5px;
+  margin: 0 1px;
+  background-color: teal;
+}

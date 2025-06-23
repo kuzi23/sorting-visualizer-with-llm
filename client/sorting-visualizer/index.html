@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sorting Visualizer</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <h2>Sorting Visualizer</h2>
+
+  <div style="margin-bottom: 10px;">
+    <button onclick="startSort()">▶️ Play</button>
+    <button onclick="pauseSort()">⏸️ Pause</button>
+    <button onclick="resetBars()">🔄 Reset</button>
+    <label for="speedRange">Speed:</label>
+    <input type="range" id="speedRange" min="10" max="1000" step="10" value="300">
+    <button onclick="exportNarration()">📝 Export Narration</button>
+  </div>
+
+  <div id="bars" style="display: flex; align-items: flex-end; height: 300px;"></div>
+
+  <div id="code" style="float: right; width: 40%; background: #1e1e1e; color: white; padding: 20px;">
+    <h3>Code</h3>
+    <pre><code>
+for (let i = 0; i < arr.length; i++)
+  for (let j = 0; j < arr.length - i - 1; j++)
+    if (arr[j] > arr[j + 1])
+      swap(arr, j, j + 1)
+    </code></pre>
+  </div>
+</body>
+</html>
