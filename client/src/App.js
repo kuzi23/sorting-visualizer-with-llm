@@ -1,5 +1,3 @@
-import React, { useState, useEffect } from 'react';
-import { bubbleSort, insertionSort } from './utils/sortingAlgorithms';
 import React, { useState, useEffect, useRef } from 'react';
 import { bubbleSort, insertionSort } from './utils/sortingAlgorithms';
 import axios from 'axios';
