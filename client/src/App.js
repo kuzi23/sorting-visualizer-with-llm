@@ -12,8 +12,8 @@ function App() {
   const [customStep, setCustomStep] = useState('');
   const narrationBoxRef = useRef();
   const stepTimeouts = useRef([]);
-  const currentStepIndex = useRef(0); // Track current step index for pause/resume
-  const stepsRef = useRef([]); // Store steps for replay on resume
+  const currentStepIndex = useRef(0);
+  const stepsRef = useRef([]);
 
   useEffect(() => {
     generateNewArray();
@@ -58,7 +58,7 @@ function App() {
           const stepText = `Step ${i + 1}: Updated array.`;
           setNarration(stepText);
           currentStepIndex.current = i + 1;
-          narrateStep(stepText); // ← Narrate each step
+          narrateStep(stepText);
         }
       }, (i - startIndex) * speed);
       stepTimeouts.current.push(timeout);
@@ -82,7 +82,7 @@ function App() {
       const narrationRes = await axios.post('https://naration-api.onrender.com/narrate', {
         step: text,
         algorithm: selectedAlgorithm,
-        difficulty: 'medium', // or add a difficulty state if needed
+        difficulty: 'medium',
       });
 
       const explanation = narrationRes.data.explanation;
@@ -106,7 +106,7 @@ function App() {
 
   const handleNarration = () => {
     setNarration(`${lang.toUpperCase()}: ${customStep}`);
-    narrateStep(customStep); // ← Add this
+    narrateStep(customStep);
   };
 
   const handleExportNarration = () => {
@@ -208,80 +208,6 @@ function App() {
           </code></pre>
         </div>
       </div>
-    </div>
-  );
-}
-
-export default App;
-
-function App() {
-  const [array, setArray] = useState([]);
-  const [selectedAlgorithm, setSelectedAlgorithm] = useState('bubble');
-
-  useEffect(() => {
-    generateNewArray();
-  }, []);
-
-  const generateNewArray = () => {
-    const newArray = Array.from({ length: 20 }, () => Math.floor(Math.random() * 100));
-    setArray(newArray);
-  };
-
-  const handleSort = () => {
-    let steps = [];
-
-    if (selectedAlgorithm === 'bubble') {
-      steps = bubbleSort([...array]);
-    } else if (selectedAlgorithm === 'insertion') {
-      steps = insertionSort([...array]);
-    }
-
-    animateSorting(steps);
-  };
-
-  const animateSorting = (steps) => {
-    steps.forEach((step, index) => {
-      setTimeout(() => {
-        setArray([...step]);
-      }, index * 300);
-    });
-  };
-
-  return (
-    <div style={{ textAlign: 'center', marginTop: '50px' }}>
-      <h1>Sorting Visualizer</h1>
-      <button onClick={generateNewArray}>Generate New Array</button>
-      <select
-        onChange={(e) => setSelectedAlgorithm(e.target.value)}
-        value={selectedAlgorithm}
-        style={{ marginLeft: '10px' }}
-      >
-        <option value="bubble">Bubble Sort</option>
-        <option value="insertion">Insertion Sort</option>
-      </select>
-      <button onClick={handleSort} style={{ marginLeft: '10px' }}>Sort</button>
-
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'end', height: '300px', marginTop: '20px' }}>
-        {array.map((value, index) => (
-          <div
-            key={index}
-            style={{
-              margin: '0 2px',
-              width: '20px',
-              height: `${value * 3}px`,
-              backgroundColor: 'teal',
-              color: 'white',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'end',
-              fontSize: '10px'
-            }}
-          >
-            {value}
-          </div>
-        ))}
-      </div>
-      <p>New array generated.</p>
     </div>
   );
 }
