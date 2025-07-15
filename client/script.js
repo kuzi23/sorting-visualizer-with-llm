@@ -1,59 +1,28 @@
 let arr = [];
 let narrationSteps = [];
 let isPaused = false;
-let currentStep = 0;
-let intervalId = null;
+let isSorting = false;
 let synth = window.speechSynthesis;
 let barCount = 60;
+let delay = 300;
 
 function createBars() {
   const barsContainer = document.getElementById("bars");
   barsContainer.innerHTML = "";
   arr = [];
   for (let i = 0; i < barCount; i++) {
-    const bar = document.createElement("div");
     const value = Math.floor(Math.random() * 100) + 1;
+    const bar = document.createElement("div");
     bar.style.height = `${value * 3}px`;
     bar.className = "bar";
+    bar.title = value;
     barsContainer.appendChild(bar);
     arr.push(value);
   }
 }
 
-function speak(text) {
-  if (!text || isPaused) return;
-  const utterance = new SpeechSynthesisUtterance(text);
-  synth.speak(utterance);
-}
-
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function bubbleSortWithNarration() {
-  const bars = document.getElementsByClassName("bar");
-  let speed = document.getElementById("speedRange").value;
-  narrationSteps = [];
-
-  for (let i = 0; i < arr.length; i++) {
-    for (let j = 0; j < arr.length - i - 1; j++) {
-      if (isPaused) {
-        await waitUntilResume();
-      }
-
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-
-        narrationSteps.push(`Swapped index ${j} (${arr[j + 1]}) and ${j + 1} (${arr[j]})`);
-        speak(narrationSteps[narrationSteps.length - 1]);
-
-        bars[j].style.height = `${arr[j] * 3}px`;
-        bars[j + 1].style.height = `${arr[j + 1] * 3}px`;
-
-        await sleep(speed);
-      }
-    }
-  }
 }
 
 function waitUntilResume() {
@@ -67,9 +36,53 @@ function waitUntilResume() {
   });
 }
 
+function speak(text) {
+  if (!text) return;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = document.getElementById("lang").value || "en";
+  synth.speak(utterance);
+}
+
+async function bubbleSortWithNarration() {
+  const speedSlider = document.getElementById("speedRange");
+  const bars = document.getElementsByClassName("bar");
+  narrationSteps = [];
+  isSorting = true;
+
+  for (let i = 0; i < arr.length; i++) {
+    for (let j = 0; j < arr.length - i - 1; j++) {
+      while (isPaused) await waitUntilResume();
+      delay = parseInt(speedSlider.value);
+
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        updateBars();
+
+        const narration = `Swapped index ${j} (${arr[j + 1]}) and ${j + 1} (${arr[j]})`;
+        narrationSteps.push(narration);
+        speak(narration);
+        document.getElementById("narrationBox").innerText = narration;
+
+        await sleep(delay);
+      }
+    }
+  }
+
+  isSorting = false;
+}
+
+function updateBars() {
+  const bars = document.getElementsByClassName("bar");
+  for (let i = 0; i < arr.length; i++) {
+    bars[i].style.height = `${arr[i] * 3}px`;
+    bars[i].title = arr[i];
+  }
+}
+
 function startSort() {
+  if (isSorting) return;
   isPaused = false;
-  synth.cancel(); // Stop any previous narration
+  synth.cancel();
   bubbleSortWithNarration();
 }
 
@@ -80,8 +93,10 @@ function pauseSort() {
 
 function resetBars() {
   isPaused = true;
+  isSorting = false;
   synth.cancel();
   createBars();
+  document.getElementById("narrationBox").innerText = "";
 }
 
 function exportNarration() {
@@ -97,9 +112,30 @@ function exportNarration() {
   link.click();
 }
 
+function getNarration() {
+  const step = document.getElementById("stepInput").value;
+  const lang = document.getElementById("lang").value;
+
+  fetch("http://127.0.0.1:5000/narrate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ algorithm_state: step, lang: lang })
+  })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("narrationBox").innerText = data.narration || "No narration received.";
+      speak(data.narration);
+    })
+    .catch(err => {
+      console.error("❌ Failed to fetch narration", err);
+      document.getElementById("narrationBox").innerText = "❌ Failed to fetch narration.";
+    });
+}
+
+// Handle speed slider changes
 document.getElementById("speedRange").addEventListener("input", function () {
-  // Speed change only takes effect on next animation step
+  delay = parseInt(this.value);
 });
 
+// Create bars initially
 window.onload = createBars;
-
