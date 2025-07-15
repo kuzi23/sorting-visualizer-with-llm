@@ -14,6 +14,7 @@ function App() {
   const stepTimeouts = useRef([]);
   const currentStepIndex = useRef(0);
   const stepsRef = useRef([]);
+  const audioRef = useRef(null);  // To keep track of playing audio
 
   useEffect(() => {
     generateNewArray();
@@ -21,6 +22,7 @@ function App() {
 
   const generateNewArray = () => {
     clearTimeouts();
+    stopAudio();
     setIsPaused(false);
     currentStepIndex.current = 0;
     stepsRef.current = [];
@@ -34,8 +36,16 @@ function App() {
     stepTimeouts.current = [];
   };
 
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+  };
+
   const handleSort = () => {
     clearTimeouts();
+    stopAudio();
     setIsPaused(false);
     currentStepIndex.current = 0;
 
@@ -47,6 +57,12 @@ function App() {
     }
 
     stepsRef.current = steps;
+
+    if (!Array.isArray(steps) || steps.length === 0) {
+      console.error('Sorting algorithm returned invalid steps:', steps);
+      return;
+    }
+
     animateSorting(steps, 0);
   };
 
@@ -54,6 +70,11 @@ function App() {
     for (let i = startIndex; i < steps.length; i++) {
       const timeout = setTimeout(() => {
         if (!isPaused) {
+          if (!Array.isArray(steps[i])) {
+            console.error(`Step ${i} is not an array:`, steps[i]);
+            clearTimeouts();
+            return;
+          }
           setArray([...steps[i]]);
           const stepText = `Step ${i + 1}: Updated array.`;
           setNarration(stepText);
@@ -68,6 +89,7 @@ function App() {
   const handlePause = () => {
     setIsPaused(true);
     clearTimeouts();
+    stopAudio();
   };
 
   const handleResume = () => {
@@ -78,7 +100,10 @@ function App() {
 
   const narrateStep = async (text) => {
     try {
-      // 1. Get explanation
+      // Stop any previous audio before starting new narration
+      stopAudio();
+
+      // 1. Get explanation from narration API
       const narrationRes = await axios.post('https://naration-api.onrender.com/narrate', {
         step: text,
         algorithm: selectedAlgorithm,
@@ -88,7 +113,7 @@ function App() {
       const explanation = narrationRes.data.explanation;
       setNarration(explanation);
 
-      // 2. Get audio
+      // 2. Get audio from narration API
       const audioRes = await axios.post(
         'https://naration-api.onrender.com/speak',
         { text: explanation },
@@ -98,7 +123,15 @@ function App() {
       const audioBlob = new Blob([audioRes.data], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
+
+      audioRef.current = audio;
       audio.play();
+
+      // Cleanup URL after audio ends
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
     } catch (error) {
       console.error('Narration error:', error);
     }
