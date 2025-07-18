@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { bubbleSort, insertionSort } from './utils/sortingAlgorithms';
 import axios from 'axios';
 
@@ -10,17 +10,15 @@ function App() {
   const [lang, setLang] = useState('en');
   const [narration, setNarration] = useState('');
   const [customStep, setCustomStep] = useState('');
+
   const narrationBoxRef = useRef();
   const stepTimeouts = useRef([]);
   const currentStepIndex = useRef(0);
   const stepsRef = useRef([]);
-  const audioRef = useRef(null);  // To keep track of playing audio
+  const audioRef = useRef(null);
 
-  useEffect(() => {
-    generateNewArray();
-  }, []);
-
-  const generateNewArray = () => {
+  // ✅ useCallback version to fix ESLint dependency warning
+  const generateNewArray = useCallback(() => {
     clearTimeouts();
     stopAudio();
     setIsPaused(false);
@@ -29,7 +27,11 @@ function App() {
     const newArray = Array.from({ length: 20 }, () => Math.floor(Math.random() * 100));
     setArray(newArray);
     setNarration('');
-  };
+  }, []);
+
+  useEffect(() => {
+    generateNewArray();
+  }, [generateNewArray]);
 
   const clearTimeouts = () => {
     stepTimeouts.current.forEach(clearTimeout);
@@ -100,10 +102,8 @@ function App() {
 
   const narrateStep = async (text) => {
     try {
-      // Stop any previous audio before starting new narration
       stopAudio();
 
-      // 1. Get explanation from narration API
       const narrationRes = await axios.post('https://naration-api.onrender.com/narrate', {
         step: text,
         algorithm: selectedAlgorithm,
@@ -113,7 +113,6 @@ function App() {
       const explanation = narrationRes.data.explanation;
       setNarration(explanation);
 
-      // 2. Get audio from narration API
       const audioRes = await axios.post(
         'https://naration-api.onrender.com/speak',
         { text: explanation },
@@ -127,7 +126,6 @@ function App() {
       audioRef.current = audio;
       audio.play();
 
-      // Cleanup URL after audio ends
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
         audioRef.current = null;
@@ -171,10 +169,11 @@ function App() {
           value={speed}
           onChange={(e) => setSpeed(Number(e.target.value))}
         />
+
         <button onClick={handleExportNarration} style={{ marginLeft: '10px' }}>📝 Export Narration</button>
       </div>
 
-      {/* Language and narration */}
+      {/* Language, Algorithm & Narration Input */}
       <div style={{ margin: '0 20px 20px' }}>
         <label>🌍 Language: </label>
         <select value={lang} onChange={(e) => setLang(e.target.value)}>
@@ -182,6 +181,12 @@ function App() {
           <option value="es">Spanish</option>
           <option value="hi">Hindi</option>
           <option value="rw">Kinyarwanda</option>
+        </select>
+
+        <label style={{ marginLeft: '20px' }}>🧮 Algorithm: </label>
+        <select value={selectedAlgorithm} onChange={(e) => setSelectedAlgorithm(e.target.value)}>
+          <option value="bubble">Bubble Sort</option>
+          <option value="insertion">Insertion Sort</option>
         </select>
 
         <br /><br />
