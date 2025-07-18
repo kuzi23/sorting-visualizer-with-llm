@@ -1,21 +1,25 @@
 # Use an official Node.js image
 FROM node:18
 
-# Install Python
-RUN apt-get update && apt-get install -y python3 python3-pip
-
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
 # Copy all files
 COPY . .
 
-# Install client dependencies
+# Install client dependencies and build React app
 WORKDIR /app/client
 RUN npm install
+RUN npm run build
 
-# Expose the port your app runs on
-EXPOSE 3000
+# Install a lightweight static server to serve the React build
+RUN npm install -g serve
 
-# Start the frontend
-CMD ["npm", "start"]
+# Set working directory to the build folder
+WORKDIR /app/client/build
+
+# Azure expects the app to listen on port 80
+EXPOSE 80
+
+# Start the app using serve
+CMD ["serve", "-s", ".", "-l", "80"]
